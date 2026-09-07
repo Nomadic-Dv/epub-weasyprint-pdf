@@ -116,8 +116,8 @@ pip install -r requirements.txt
 
 全程两步命令、轻量化执行，支持Windows本地离线运行
 
-```Plain Text
-# 1. EPUB解析预处理，生成标准化HTML
+```cmd
+# 1. EPUB解析预处理，生成标准化HTML；两次都需在项目文件夹内运行；如果在外部地址运行所有的文件都需写完整路径
 python epub_to_html.py "你的书籍.epub" "输出.html" assets
 
 # 2. WeasyPrint渲染生成最终PDF

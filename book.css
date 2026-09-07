@@ -66,10 +66,12 @@
     content: string(chapter) string(section) !important;
     font-size: 0.7em;
     font-family: "华文行楷", serif;
+    line-height: 1.5em;
     font-style: oblique !important;
     font-synthesis: style !important;   /* 尝试让 WeasyPrint 合成斜体(中文字体常无斜体字形) */
     font-weight: lighter !important;
     margin-right: -0.8cm !important;    /* 负值=往右(翻口)拉，只挪页眉不动正文 */
+    margin-left: 3.0cm !important;   /* 正数=缩短左侧，页眉整体右移，不再贴正文左缘 */
     text-decoration: underline !important;            /* 页眉下划线(去掉则删此行) */
     text-underline-thickness: 0.5pt;                  /* 线粗细 */
     text-underline-offset: 0.5em;                     /* 线与文字距离 */
