@@ -1,0 +1,244 @@
+/* ============================================================================
+   WeasyPrint 版式（book.css）
+   ----------------------------------------------------------------------------
+   用途   : run.py 用 WeasyPrint 渲染「书 HTML」→ PDF 的版式控制
+   流程   : epub_to_html.py 生成单文件 HTML → run.py 读本 CSS 渲染 PDF
+   说明   : 不改本书内容，只改本文件，然后重跑 run.py 即可。
+
+   ★ 快速找改动点 ★
+     纸张尺寸      -> 第 1 节  @page { size: ... }
+     页边距(镜像)  -> 第 2 节  @page :right  /  @page :left  的 margin-*
+     页眉内容      -> 第 3 节  string(...) 组合
+     页眉分隔符号  -> 第 5 节  h2 { string-set: section "／" ... } 的 "／"
+     页眉/页码字体 -> 第 3 节  @top-* / @bottom-* 里的 font-* / text-*
+     正文字体字号  -> 第 4 节  body 的 font-* / line-height
+     正文行距缩进  -> 第 4 节  p 的 line-height / text-indent
+     图片限宽      -> 第 4 节  img / .chatu img 的 max-width / height
+     每个源xhtml独占一页 -> 第 5 节  .epub-block
+     目录页码      -> 第 6 节  .toc a::after
+     正文起页码    -> 第 7 节  @page main
+   ============================================================================ */
+
+
+/* ============================================================================
+   1. 纸张
+   ============================================================================ */
+@page { size: A5; }   /* A5；想换 A4：A4 */
+
+
+/* ============================================================================
+   2. 页边距（镜像边距：奇数页/偶数页 左右不同）
+      单位 cm；1in = 2.54cm。加 !important 压过 EPUB 自带 @page{margin:5pt}。
+      - 奇数页(:right) = 右手页：margin-left 是内侧(书脊)，margin-right 是外侧(翻口)
+      - 偶数页(:left)  = 左手页：mirror——margin-left 是外侧(翻口)，margin-right 是内侧(书脊)
+   ============================================================================ */
+
+/* --- 奇数页 / 右手页 --- */
+@page :right {
+  margin-top:    1.5cm !important;   /* 上边距 */
+  margin-bottom: 1.5cm !important;   /* 下边距 */
+  margin-left:   2.0cm !important;   /* 内侧(书脊侧) —— 可改 */
+  margin-right:  1.5cm !important;   /* 外侧(翻口侧) —— 可改；越小越靠翻口 */
+}
+
+/* --- 偶数页 / 左手页 （左右镜像） --- */
+@page :left {
+  margin-top:    1.5cm !important;
+  margin-bottom: 1.5cm !important;
+  margin-left:   1.5cm !important;   /* 外侧(翻口侧) —— 可改 */
+  margin-right:  2.0cm !important;   /* 内侧(书脊侧) —— 可改 */
+}
+
+
+/* ============================================================================
+   3. 页眉 + 页码（跑到页边距里的 margin-box）
+      - 奇数页: 左上/右上 放「章」；页码在 翻口侧(右)
+      - 偶数页: 左上/右上 放「书名」；页码在 翻口侧(左)
+      页眉取的是 string() 的值 —— 由第 5 节 h1/h2/booktitle 的 string-set 提供。
+      页码用自定义计数器 main-pagecounter（见第 7 节），不是内置 page。
+   ============================================================================ */
+
+/* --- 奇数页 / 右手页 --- */
+@page :right {
+  /* 页眉：章 | 节。分隔符“／”放在 section 值里(见第 5 节)，
+     只有存在二级标题才显示“／”；只有一级标题时 section 为空，只显示章名。 */
+  @top-right {
+    content: string(chapter) string(section) !important;
+    font-size: 0.7em;
+    font-family: "华文行楷", serif;
+    font-style: oblique !important;
+    font-synthesis: style !important;   /* 尝试让 WeasyPrint 合成斜体(中文字体常无斜体字形) */
+    font-weight: lighter !important;
+    margin-right: -0.8cm !important;    /* 负值=往右(翻口)拉，只挪页眉不动正文 */
+    text-decoration: underline !important;            /* 页眉下划线(去掉则删此行) */
+    text-underline-thickness: 0.5pt;                  /* 线粗细 */
+    text-underline-offset: 0.5em;                     /* 线与文字距离 */
+  }
+  /* 页码：靠右(翻口侧) */
+  @bottom-right {
+    content: counter(main-pagecounter) !important;
+    font-size: 0.8em;
+    font-style: oblique !important;
+    font-synthesis: style !important;
+    font-weight: lighter !important;
+    margin-right: -0.8cm !important;
+  }
+}
+
+/* --- 偶数页 / 左手页 --- */
+@page :left {
+  /* 页眉：书名 */
+  @top-left {
+    content: string(booktitle) !important;   /* 书名自动来自 EPUB(epub_to_html.py 注入) */
+    font-size: 0.7em;
+    font-family: "华文行楷", serif;
+    font-style: oblique !important;
+    font-synthesis: style !important;
+    font-weight: lighter !important;
+    margin-left: -0.8cm !important;     /* 负值=往左(翻口)拉 */
+    text-decoration: underline !important;
+    text-underline-thickness: 0.5pt;
+    text-underline-offset: 0.5em;
+  }
+  /* 页码：靠左(翻口侧) */
+  @bottom-left {
+    content: counter(main-pagecounter) !important;
+    font-size: 0.8em;
+    font-style: oblique !important;
+    font-synthesis: style !important;
+    font-weight: lighter !important;
+    margin-left: -0.8cm !important;
+  }
+}
+
+
+/* ============================================================================
+   4. 正文排版（字体 / 字号 / 行距 / 首行缩进 / 图片）
+   ============================================================================ */
+body {
+  font-family: "宋体", "Noto Serif CJK SC", serif !important;   /* 正文字体 */
+  font-size: 0.78em !important;    /* 正文字号：1em≈12pt，0.76em≈9pt，0.85em≈10pt */
+  line-height: 1.8 !important;     /* 行距(倍数) */
+  text-align: justify !important;  /* 两端对齐 */
+}
+p {
+  margin: 0 !important;            /* 段间距 0 */
+  text-indent: 2em !important;     /* 首行缩进 2 字符 */
+}
+
+/* 图片：统一限宽 + 等比缩放，避免超大图溢出/跨页 */
+img {
+  max-width: 100% !important;      /* 最宽不超过正文可用宽度 */
+  height: auto !important;         /* 高度随宽度等比，不变形 */
+}
+/* 正文插图容器：其内图片同样限宽居中 */
+.chatu img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+
+/* ============================================================================
+   5. 标题分页 + 页眉取值 (string-set)
+      - 所有标题默认起新页；但在 .epub-block 内会被下方规则覆盖掉(见“块内标题”)
+      - h1 → chapter(一级标题)；并把 section 清空 → 只有一级标题时页眉无“／”
+      - h2 → section = “／二级标题” → 页眉才显示“／”
+      - 目录标题(.toc-title) 也是 <h2>，必须排除，否则会把 section 设成“目　录”
+   ============================================================================ */
+h1, h2, h3, h4, h5, h6 {
+  break-before: page !important;        /* 起新页(现代属性) */
+  page-break-before: always !important; /* 起新页(兼容) */
+  page-break-after: avoid !important;   /* 标题后不孤行 */
+}
+
+h1 { string-set: chapter content(), section "" !important; }  /* 一级标题 → 页眉章名；同时清空 section */
+h2 { string-set: section "／" content() !important; }         /* 二级标题 → “／节名”；“／”是页眉分隔符，想换符号改这里 */
+#booktitle { string-set: booktitle content() !important; }    /* 书名 → 偶数页页眉 */
+
+/* 每个源 xhtml 内容块独立成页：内容不足一页也独占一页(该页留白)，不跟下一块接排。
+   由 epub_to_html.py 把每块包进 <div class="epub-block">。 */
+.epub-block {
+  break-before: page !important;        /* 每块独立起一页 */
+  page-break-before: always !important;
+}
+
+/* 块内标题不再强制起新页。
+   很多源 xhtml 是 “图片(.chatu) → h1 → 正文” 的结构；若 h1 仍 break-before:page，
+   图片会被挤到上一页、标题/正文被轰到下一页，导致图片“独自占一页”。
+   块本身已独占一页，块内标题应连续排(像 EPUB 浏览)，图排到正文上方。 */
+.epub-block h1,
+.epub-block h2,
+.epub-block h3,
+.epub-block h4,
+.epub-block h5,
+.epub-block h6 {
+  break-before: auto !important;
+  page-break-before: auto !important;
+  page-break-after: avoid !important;   /* 标题后不孤行 */
+}
+
+
+/* ============================================================================
+   6. 目录 (TOC)
+      - 排版：一级顶格，二级缩进，不带编号前缀
+      - 页码：用 target-counter 指向 main-pagecounter(第 7 节)，显示真实页码
+      - 强制从右手页(奇数页)开始：若上一页是偶数页，自动补一页空白。
+      - 字体/字号：默认继承正文；如需单独控制，改下面 .toc 的 font-* 即可
+        (带 !important 压过源 EPUB 的目录样式)
+   ============================================================================ */
+.toc {
+  break-before: right !important;        /* 强制从右手(奇数)页开始 */
+  page-break-before: right !important;   /* 兼容写法 */
+
+  /* —— 目录整体字体 / 基准字号 / 行距（想改就在这） —— */
+  font-family: "宋体", "Noto Serif CJK SC", serif !important;
+  font-size: 1em !important;             /* 相对 body 的倍数；想大字改 1.1em/1.2em */
+  line-height: 1.5 !important;
+}
+.toc-title { text-align: center; page-break-before: avoid !important; }
+.toc-title { string-set: none !important; }   /* 关键：目录标题是 <h2>，排除以免污染页眉 section */
+/* 目录大标题「目　录」：单独控制字体/字号 */
+.toc-title {
+  font-family: "华文行楷", serif !important;
+  font-size: 1.6em !important;
+}
+
+.toc ul { list-style: none; padding-left: 0; }
+.toc li { margin: 0.4em 0; }
+.toc li.lvl1 { padding-left: 0; }              /* 一级标题：顶格 */
+.toc li.lvl2 { padding-left: 2em; }            /* 二级标题：缩进 */
+.toc a { text-decoration: none; color: inherit !important; }   /* 目录条目跟着正文颜色走，压过源 EPUB 的链接蓝(a{color:#0000CC}) */
+
+/* 目录条目分层字号：一级(章) 稍大、二级(节) 稍小（想改就改这里） */
+.toc li.lvl1 a { font-size: 1.05em !important; }
+.toc li.lvl2 a { font-size: 0.95em !important; }
+
+.toc a::after {
+  content: leader(".") "　" target-counter(attr(href url), main-pagecounter);   /* 目录页码 = 正文真实页码 */
+}
+
+
+/* ============================================================================
+   7. 前置页 / 正文分页 + 页码分组
+      - 前置页(封面/版权/目录) : 命名页 frontmatter，无页眉无页码
+      - 正文              : 命名页 main，只有它递增 main-pagecounter → 正文第 1 页 = 1
+      说明：WeasyPrint 的 :left/:right 会匹配所有左右页，所以递增不能放 :left/:right
+           (否则连前置页也计数，正文就从 10 开始)，必须放“正文专用命名页 main”上。
+   ============================================================================ */
+.frontmatter { page: frontmatter; }
+@page frontmatter {
+  margin: 1.5cm 1.2cm;
+  @top-left    { content: none !important; }
+  @top-right   { content: none !important; }
+  @bottom-left { content: none !important; }
+  @bottom-right{ content: none !important; }
+}
+
+.maincontent {
+  page: main;
+  break-before: right !important;        /* 正文强制从右手(奇数)页开始；若上一页是偶数页自动补空白 */
+  page-break-before: right !important;
+}
+@page main {
+  counter-increment: main-pagecounter;   /* 正文每页 +1 → 正文首页 = 1 */
+}
