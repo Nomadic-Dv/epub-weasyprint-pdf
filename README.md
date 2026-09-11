@@ -210,7 +210,3 @@ WeasyPrint 内核不支持中文伪斜体合成，页眉及正文中文无法倾
 
 - [obsidian-pandoc-epub](https://github.com/Nomadic-Dv/obsidian-pandoc-epub) —— 把 Obsidian 多文件夹笔记合并导出为 EPUB  
   👉 **工作流**：Obsidian → EPUB → PDF
-
-
-
-> （注：部分内容可能由 AI 生成）
