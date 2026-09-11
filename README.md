@@ -1,3 +1,17 @@
+# EPUB → PDF 书稿级排版转换（WeasyPrint 实现）
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![WeasyPrint](https://img.shields.io/badge/WeasyPrint-60%2B-blue.svg)](https://weasyprint.org/)
+[![GitHub stars](https://img.shields.io/github/stars/Nomadic-Dv/epub-weasyprint-pdf.svg)](https://github.com/Nomadic-Dv/epub-weasyprint-pdf/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/Nomadic-Dv/epub-weasyprint-pdf.svg)](https://github.com/Nomadic-Dv/epub-weasyprint-pdf/issues)
+[![GitHub last commit](https://img.shields.io/github/last-commit/Nomadic-Dv/epub-weasyprint-pdf.svg)](https://github.com/Nomadic-Dv/epub-weasyprint-pdf/commits/main)
+
+> **不丢失原书样式**，把 EPUB 转成**出版级排版**的 PDF。  
+> 镜像页边距 · 奇偶页差异化页眉 · 翻口页码 · 右手页起章 · 真实目录页码锚点。  
+> 全程纯 Python + WeasyPrint，无需 LaTeX，无需 Calibre，本地离线即可跑。
+
+
 ## 1\. 项目概述
 
 本项目实现**无损保留 EPUB 原生排版观感**的高质量 PDF 转换，区别于 Calibre、Pandoc 通用转换方案，主打「原书样式保真 \+ 出版级书籍版式」。全程基于纯 Python \+ WeasyPrint 实现，不依赖 LaTeX、不依赖 Calibre、无大型环境依赖，轻量化、可本地离线运行，专为中文电子书书稿排版优化。
@@ -185,5 +199,13 @@ WeasyPrint 内核不支持中文伪斜体合成，页眉及正文中文无法倾
 **100% 保留EPUB原生排版观感 \+ 轻量化纯Python部署 \+ 完整中文书稿出版版式 \+ 稳定无BUG的页码与分页体系**
 
 是普通中文电子书、读物、书籍 EPUB→PDF 高质量转换的**最优工程方案**，兼顾美观、实用性、易用性与稳定性，远超市面所有开源通用转换工具。
+
+
+## 相关项目
+
+- [obsidian-pandoc-epub](https://github.com/Nomadic-Dv/obsidian-pandoc-epub) —— 把 Obsidian 多文件夹笔记合并导出为 EPUB  
+  👉 **工作流**：Obsidian → EPUB → PDF
+
+
 
 > （注：部分内容可能由 AI 生成）
