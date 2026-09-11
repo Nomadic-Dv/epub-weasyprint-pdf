@@ -1,22 +1,33 @@
-# Python缓存
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# ===== 忽略所有，只放行工具文件 =====
+/*
+!/.gitignore
+!/LICENSE
+!/README.md
+!/requirements.txt
+!/book.css
+!/epub_to_html.py
+!/run.py
+!/WeasyPrint方案使用说明.md
 
-# 程序输出产物
+# ===== 中间产物（双重保险） =====
+*.pdf
 *.epub
 *.html
-*.pdf
 assets/
 output/
+temp/
 
-# VSCode / PyCharm配置
+# ===== Python =====
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# ===== 编辑器 =====
 .vscode/
 .idea/
 *.swp
-*.swo
 
-# 系统文件
-Thumbs.db
+# ===== 操作系统 =====
 .DS_Store
+Thumbs.db
