@@ -9,6 +9,9 @@
 !/run.py
 !/WeasyPrint方案使用说明.md
 
+# ===== 放行文件 =====
+!/CHANGELOG.md
+
 # ===== 中间产物（双重保险） =====
 *.pdf
 *.epub
@@ -31,3 +34,9 @@ venv/
 # ===== 操作系统 =====
 .DS_Store
 Thumbs.db
+
+# ===== 放行示例文件 =====
+!/examples/
+!/examples/README.md
+!/examples/sample-input.epub
+!/examples/sample-output.pdf

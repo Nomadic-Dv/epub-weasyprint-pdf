@@ -201,6 +201,11 @@ WeasyPrint 内核不支持中文伪斜体合成，页眉及正文中文无法倾
 是普通中文电子书、读物、书籍 EPUB→PDF 高质量转换的**最优工程方案**，兼顾美观、实用性、易用性与稳定性，远超市面所有开源通用转换工具。
 
 
+## 更新日志
+
+详见 [CHANGELOG.md](./CHANGELOG.md)。
+
+
 ## 相关项目
 
 - [obsidian-pandoc-epub](https://github.com/Nomadic-Dv/obsidian-pandoc-epub) —— 把 Obsidian 多文件夹笔记合并导出为 EPUB  
