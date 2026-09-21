@@ -17,13 +17,14 @@
      每个源xhtml独占一页 -> 第 5 节  .epub-block
      目录页码      -> 第 6 节  .toc a::after
      正文起页码    -> 第 7 节  @page main
+     源书样式纠偏  -> 第 8 节（图片/图注的通用纠偏，任何书都生效，先看这节）
    ============================================================================ */
 
 
 /* ============================================================================
    1. 纸张
    ============================================================================ */
-@page { size: A5; }   /* A5；想换 A4：A4 */
+@page { size: A5 !important; }   /* A5；想换 A4：A4。加 !important 是为了压过源 EPUB 自带的 @page{size:…} */
 
 
 /* ============================================================================
@@ -244,3 +245,122 @@ h2 { string-set: section "／" content() !important; }         /* 二级标题 �
 @page main {
   counter-increment: main-pagecounter;   /* 正文每页 +1 → 正文首页 = 1 */
 }
+
+
+/* ============================================================================
+   8. 源 EPUB 样式纠偏（通用：任何书都生效，不需要改源文件）
+   ----------------------------------------------------------------------------
+   为什么需要：源 EPUB 里常见的这几类写法，会在 PDF 里造成插图周围的大片空白
+   ——图片被挤到单独一页、图注被甩到下一页、页面上半页或下半页全空：
+     A. 插图/图注外面套「固定高度 + 垂直居中」容器
+        height:600px; display:flex; align-items:center; justify-content:center;
+        display:table-cell; vertical-align:middle; min-height:100%; line-height:600px …
+        600px = 450pt，几乎是整页版心(510pt)，于是一个盒子独占一页。
+     B. 图片尺寸写死：行内 style="width:800px;height:600px" 或 width/height 属性
+        → 溢出、变形，或一页只放得下一张图。
+     C. 插图容器自带 break-before: page，或 margin/padding 大得离谱
+        → 图片前后整页留白。
+     D. 手工改过 CSS 的源书常留有「调试边框」（border:3px dashed red 之类）
+        → 成品里出现红虚线框。
+
+   处理顺序：A 去高度 → B 限尺寸 → C 绑分页 + 收边距 → D 去调试边框。
+   说明：WeasyPrint 里「作者样式表 + !important」优先级高于元素行内 style，
+        所以连 style="..." 里写死的也能压住（行内再带 !important 的极罕见，
+        遇到就只能在源文件里删）。
+   ★ 想改图片最大高度：8.2 的 max-height（vh = 版心高度的百分比）
+   ============================================================================ */
+
+/* ---- 8.1 拆掉一切「固定高度」容器：高度只由内容决定 ---- */
+* {
+  height: auto !important;      /* 压掉 height:600px / height:100% 这类撑页写法 */
+  min-height: 0 !important;     /* 压掉 min-height:600px 这类 */
+  max-width: 100% !important;   /* 顺手防住 width:800px 这类横向溢出 */
+}
+html, body { height: auto !important; }
+
+/* 例外：epub_to_html.py 注入的隐藏书名标记（page 页眉要用 string-set 取值），
+   必须保持 0 高度，否则会在前置页上多占一行。 */
+#booktitle { height: 0 !important; }
+
+/* ---- 8.2 图片：只限「上限」、等比缩放，保证一页之内放得下 ---- */
+img, svg, image, video, canvas, object, embed {
+  max-width:  100% !important;   /* 不超出正文宽度 */
+  max-height: 68vh !important;   /* vh = 版心高度，68% 之后还放得下图注+几行正文 */
+  height:     auto !important;   /* 压掉写死高度：保持比例、不变形 */
+}
+/* 注意：这里故意不写 width:auto。
+   否则源里的小图标/装饰图（style="width:1em"）会被还原成原始像素大小，
+   反而把行撑破；只限上限既安全又够用。 */
+
+/* ---- 8.3 插图块：只要容器里「只有一张图」，一律按插图处理 ---- */
+:has(> img:only-child):not(body):not(html),
+:has(> svg:only-child):not(body):not(html),
+:has(> picture:only-child):not(body):not(html),
+:has(> a:only-child > img:only-child):not(body):not(html),   /* 包一层 <a> 的点击放大图 */
+figure {
+  display: block !important;        /* 源里用 flex/table 居中 → 改回块级，图不会被挤到旁边 */
+  break-inside: avoid !important;   /* 图本身不被拆页 */
+  break-after: avoid !important;    /* 图注/正文必须跟着图走，不能被甩到下一页留一页空白 */
+  break-before: auto !important;    /* 去掉源里写死的「插图另起一页」 */
+  text-align: center !important;    /* 图居中 */
+  text-indent: 0 !important;        /* 不首行缩进（否则图会被推右 2em） */
+  margin-top: 0.8em !important;     /* 上下留一点即可，压掉源里的巨大 margin/padding */
+  margin-bottom: 0.8em !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border: 0 !important;             /* 源里手工加的调试边框（如 border:3px dashed red） */
+  background: none !important;
+}
+/* 图片和说明文字同在一个容器里（flex 横排）时，改回竖排：图在上、图注在下 */
+:has(> img):has(> figcaption),
+:has(> img):has(> p),
+:has(> svg):has(> figcaption),
+:has(> svg):has(> p) {
+  display: block !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* ---- 8.4 图注：跟着图片走 + 行高/边距归一（各家 class 叫法都覆盖） ---- */
+figcaption,
+.tuzhu, .tu-zhu, .tushi, .caption, .img-caption, .imgcaption, .pic-caption,
+.picture-caption, .figure-caption, .fignote, .fnote-caption,
+[class*="caption"], [class*="tuzhu"], [class*="middle-img"], [class*="img-text"] {
+  break-before: avoid !important;   /* 图片在页底时，图注跟着图一起挪到下一页 */
+  break-inside: avoid !important;
+  break-after: auto !important;
+  line-height: 1.5 !important;      /* 压掉用巨大 line-height 撑空白的写法 */
+  text-indent: 0 !important;        /* 图注不缩进（压过第 4 节 p{text-indent:2em}） */
+  margin-top: 0.3em !important;
+  margin-bottom: 0.6em !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* ---- 8.5 结构兜底：不认 class 名也能兜住 ----
+   1) 紧跟在插图后面的块（绝大多数书这里就是图注）：不许跟插图分到两页；
+   2) 行内用长度写死的 line-height（line-height:600px 这种垂直居中花招）还原为继承值。
+   说明：如果源书把 line-height:600px 写在样式表的自定义 class 上、又没放在插图后面，
+        纯 CSS 无从识别——那种只能改源文件（本项目的书里没有这种写法）。 */
+:has(> img:only-child) + p,
+:has(> img:only-child) + figcaption,
+:has(> img:only-child) + div,
+:has(> svg:only-child) + p,
+figure + p, img + p {
+  break-before: avoid !important;
+}
+*[style*="line-height"][style*="px"],
+*[style*="line-height"][style*="pt"],
+*[style*="line-height"][style*="cm"] {
+  line-height: inherit !important;
+}
+
+/* ---- 8.6 标题上的边框一并去掉 ----
+   源书里手工改 CSS 时，常留下「调试边框」——最典型就是
+   .p1/.p4 { border:3px dashed red; height:600px; display:flex; … } 这种
+   给章标题做垂直居中的盒子（高度已被 8.1 压掉，红框还在）。
+   标题的版式本来就由 book.css 说了算，所以统一不带边框。
+   ★ 想保留源书标题的装饰线（如 h1 下划线），把下面这一行注释掉即可。 */
+h1, h2, h3, h4, h5, h6 { border: 0 !important; }
+
+
