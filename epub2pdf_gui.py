@@ -135,9 +135,9 @@ class App:
 
         row2 = tk.Frame(root)
         row2.pack(fill="x", padx=10, pady=6)
-        self.open_var = tk.BooleanVar(value=True)
+        self.open_var = tk.BooleanVar(value=False)
         tk.Checkbutton(row2, text="转完自动打开 PDF", variable=self.open_var).pack(side="left")
-        self.clean_var = tk.BooleanVar(value=False)
+        self.clean_var = tk.BooleanVar(value=True)
         tk.Checkbutton(row2, text="转完删除中间文件（含 _work 整目录）",
                        variable=self.clean_var).pack(side="left", padx=(12, 0))
         tk.Button(row2, text="开始转换", command=self.start, width=12).pack(side="right")
