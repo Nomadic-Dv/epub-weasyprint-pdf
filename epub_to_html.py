@@ -48,11 +48,21 @@ def main(epub, out_html, work_dir):
     man = {it.get('id'): it.get('href') for it in items}
     spine = [r.get('idref') for r in root.iter('{%s}itemref' % OPF_NS)]
     # 目录 html：跳过源 EPUB 自带的目录页，避免跟自动生成的目录重复。
-    # 识别两法(都会命中，且不会命中正文/图片)：
+    # 识别三法(都会命中，且不会命中正文/图片)：
     #   1) EPUB3 规范 properties="nav" 的导航文档(toc.xhtml/nav.xhtml)
     #   2) 文件名/id 明确带目录词(如 x_TOC.xhtml, contents.html, 目录)的 xhtml
+    #   3) 内容看着就是目录页的：正文里指向“其它正文文件”的内部链接很多
+    #      （例：硬派健身的目录页叫 text/part0001.html，id/href 里没有任何目录词，
+    #        但正文是 65 个指向其它 part 的链接 + 一个“目录”标题）
     # media-type 是 application/xhtml+xml，要匹配 'xhtml'(后缀其实是 +xml，不能 endswith('xhtml'))。
+    #
+    # ★ 想手动跳过某些页（自动没认出来时）：把文件名写进 SKIP_HREFS，例如
+    #     SKIP_HREFS = ('text/part0001.html',)
+    #   写完整 href 或只写文件名都行。
+    SKIP_HREFS = ()
     _TOC_WORDS = ('toc', 'contents', 'directory', '目录')
+    spine_basenames = {(man.get(r) or '').replace('\\', '/').split('/')[-1].lower()
+                       for r in spine if man.get(r)}
     nav_ids = set()
     for it in items:
         props = it.get('properties') or ''
@@ -62,6 +72,37 @@ def main(epub, out_html, work_dir):
         idh = ((it.get('id') or '') + '/' + (it.get('href') or '')).lower()
         if 'nav' in props.split() or any(w in idh for w in _TOC_WORDS):
             nav_ids.add(it.get('id'))
+    for it in items:
+        if it.get('id') in nav_ids:
+            continue
+        mt = it.get('media-type') or ''
+        if 'xhtml' not in mt:
+            continue
+        href = it.get('href') or ''
+        base = href.replace('\\', '/').split('/')[-1]
+        if href in SKIP_HREFS or base in SKIP_HREFS:
+            nav_ids.add(it.get('id'))      # 手工名单
+            print('跳过源目录页(手工指定):', href)
+            continue
+        try:
+            d = z.read(fpath(norm(opf_dir, href))).decode('utf-8', 'ignore')
+        except Exception:
+            continue
+        m = re.search(r'(?is)<body[^>]*>(.*)</body>', d)
+        body = m.group(1) if m else d
+        others = 0
+        for l in re.findall(r'(?is)<a\s[^>]*href=["\']([^"\']+)["\']', body):
+            l = l.split('#')[0].strip().lower()
+            if not l or l.startswith(('http', 'mailto', 'javascript', 'data:')):
+                continue
+            if l.split('/')[-1] in spine_basenames and l.split('/')[-1] != base.lower():
+                others += 1
+        textlen = len(re.sub(r'<[^>]+>', '', re.sub(r'(?is)<(script|style).*?</\1>', '', body)))
+        # 判据（保守，宁可漏判也不误删正文）：指向其它正文的链接 ≥5 个，
+        # 纯文字 ≤4000 字，且“每 40 字就有一个链接”的密度
+        if others >= 5 and textlen <= 4000 and others * 40 >= textlen:
+            nav_ids.add(it.get('id'))
+            print('跳过源目录页(自动识别):', href, '| 内部链接 %d 个 / 文字 %d 字' % (others, textlen))
     css_hrefs = [it.get('href') for it in items if (it.get('media-type') or '').endswith('css')]
 
     # ---- 1) 解出整包到 work_dir，保留目录结构 ----
