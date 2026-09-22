@@ -176,7 +176,7 @@ cd /d "C:\Users\ZhangXu\Desktop\epub‑weasyprint‑pdf"
 python epub_to_html.py "D:\电子书\你的书.epub" "_work\你的书\book.html" "_work\你的书"
 python run.py          "_work\你的书\book.html" "你的书.pdf"
 ```
-> 第一条（拆书）会打印 `生成: … | 书名: … | 目录项: NN`，可核对取到的书名和目录条数；第二条（排版）打印 `完成 -> …pdf` 和页数。
+> 第一条（拆书）会打印 `生成: … | 书名: … | 目录项: NN`，可核对取到的书名和目录条数；第二条（排版）打印 `完成 -> …pdf`。
 
 ---
 
