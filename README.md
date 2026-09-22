@@ -112,7 +112,7 @@
 ## 5\. 项目文件结构与作用
 
 - **epub2pdf\_gui\.cmd**：图形窗口启动器（纯 ASCII，避免 cmd 代码页把中文读坏）。依次检查 Python → `weasyprint` → `tkinter`，都通过就用 `pythonw` 启动窗口（不弹黑窗口），缺什么给出中文安装提示
-- **epub2pdf\_gui\.py**：图形窗口本体（粘贴/选择 epub、实时日志、转完自动打开 PDF、可选"转完删除中间文件"）。内部依次调用下面两条，并为子进程设置 `PYTHONIOENCODING=utf-8` + `-X utf8` —— 否则中文 Windows 下按 GBK 输出，路径含 GBK 无法表示的字符时会 `UnicodeEncodeError` 崩溃
+- **epub2pdf\_gui\.py**：图形窗口本体（粘贴/选择 epub、实时日志、可选"转完自动打开 PDF"与"转完删除中间文件"）。内部依次调用下面两条，并为子进程设置 `PYTHONIOENCODING=utf-8` + `-X utf8` —— 否则中文 Windows 下按 GBK 输出，路径含 GBK 无法表示的字符时会 `UnicodeEncodeError` 崩溃
 - **epub\_to\_html\.py**：核心解析器，负责EPUB解包、DOM清洗、样式内联、路径修复、目录生成、章节结构化、前置/正文页拆分，输出标准化HTML
 - **run\.py**：渲染调度器，自动读取自定义CSS、指定资源根目录，调用WeasyPrint完成PDF渲染
 - **book\.css**：全书式核心文件，包含纸张配置、镜像边距、奇偶页眉页码、分页规则、目录样式、图文适配、源样式纠偏（第 8 节）、全局版式规范
