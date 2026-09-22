@@ -142,7 +142,8 @@ HTML(html, base_url=base).write_pdf(out, stylesheets=[CSS(book_css)])
 - **块内连续排**：`.epub-block h1..h6 { break-before: auto }`，让「图→标题→正文」不拆页。
 - **第 8 节「源 EPUB 样式纠偏」（通用，任何书都生效）**：对付源书里那些会造成插图大片空白的写法 ——
   `* { height:auto !important; min-height:0 !important }` 拆掉固定高度容器（如 `height:600px` + flex 垂直居中）；
-  `img/svg { max-width:100%; max-height:68vh; height:auto }` 保证一图一页内放得下且不变形；
+  `img/svg { max-width:100%; max-height:68vh; height:auto; object-fit:contain }` 保证一图一页内放得下、等比不变形；
+  （**图片大小就由这两条上限决定**：`max-width:100%` = 正文栏宽 113mm；`max-height:68vh` = 版心高 180mm × 68% = **122.4mm**。想整体调小只改 `68vh` 这个数，见第 288 行。）
   `:has(> img:only-child)` 等结构选择器把插图当整体（图注必须跟图同页）；
   图注统一 `break-before: avoid`、行高归一；标题去调试边框。详见文件里第 8 节的注释（8.1~8.6）。
 - **目录排版**：`.toc a` 去掉下划线并 `color: inherit !important`（压过源 EPUB 的链接蓝）；`.toc a::after` 填页码。
@@ -258,10 +259,13 @@ p { text-indent: 2em; }
 8. **前置页仍有页码/页眉** → 确认 `.frontmatter { page: frontmatter; }` 且 `@page frontmatter` 里 `@top-*`/`@bottom-*` 都设了 `content: none`。
 9. **目录页码全 1** → 不要用 `counter-reset: page`（与 `target-counter` 冲突）；页码/目录都指向 `main-pagecounter`。
 10. **目录条目是蓝色/带下划线** → 源 EPUB 有全局 `a{color:#0000CC}`；保持 `.toc a { color: inherit !important; text-decoration: none; }`（`!important` 必须保留）。
-11. **PDF 里出现「重复的目录」（常是蓝色的一大串链接）** → 源 EPUB 自带的目录 xhtml 没被跳过。重跑 `epub_to_html.py` 即可，它用三条规则自动识别并跳过源目录页（见「一、这些文件都是干嘛的」里的检测表），运行时打印 `跳过源目录页(自动识别): xxx` 就是识别到了。三条都没命中的极端书，把文件名手工填进 `epub_to_html.py` 第 62 行 `SKIP_HREFS`。
+11. **PDF 里出现「重复的目录」（常是蓝色的一大串链接）** → 源 EPUB 自带的目录 xhtml 没被跳过。重跑 `epub_to_html.py` 即可，它用三条规则自动识别并跳过源目录页（见「一、这些文件都是干嘛的」里的检测表）；打印 `跳过源目录页(自动识别): xxx` 说明是规则③认出来的（规则①②不打印，见第 17 条）。三条都没命中的极端书，把文件名手工填进 `epub_to_html.py` 第 62 行 `SKIP_HREFS`。
 12. **插图周围一大片空白 / 图注被挤到下一页** → 源 EPUB 给图片或图注套了**固定高度**容器（如 `height:600px` + 垂直居中 flex），或给标题加了调试用边框。`book.css` **第 8 节「源 EPUB 样式纠偏」** 已通用处理：8.1 拆固定高度、8.2 图片限高 `68vh`（第 288 行）、8.3 把「图＋图注」当整体不分页（其后紧跟一段把 flex 横排改回竖排）、8.4 图注 `break-before: avoid`、8.6 去标题边框。改完重跑排版（不用重跑拆书）。想更紧/更松只调 8.2 的 `max-height: 68vh`。
 13. **图形窗口报转换失败，日志里有 `UnicodeEncodeError`/`gbk codec`** → 子进程输出编码问题，本项目已用 `PYTHONIOENCODING=utf-8`（`epub2pdf_gui.py` 第 25–27 行）解决；若你把脚本搬去别处并改过这几行，注意别删。另外本项目目录名里有个特殊连字符 `‑`（U+2011，GBK 里没有），**建议把文件夹改名为 `epub-weasyprint-pdf`**（普通 ASCII 连字符），能避开这一整类编码坑。
 14. **GLib 一堆警告** → 无关噪音，忽略。
+15. **图片太大、几乎占满整页** → 图片的**高度上限**就是 8.2 第 288 行的 `max-height: 68vh`（A5 版心 180mm × 68% = **122.4mm**）；嫌大就调小（`55vh` = 99mm、`50vh` = 90mm），**宽度上限**是第 287 行 `max-width: 100%`（正文栏宽 113mm）。注意源 EPUB 自己写的 `width:100%`/`height:600px` 仍决定图片的"基准尺寸"，我们这两条只是加上限，所以同一个数值在不同书上观感会不同。改完**只需重跑第 2 步（排版）**，不用重新拆书。
+16. **图片被压扁或拉宽（比例不对）** → 源书写了 `width:100%` 时它会和 `max-height` 打架，WeasyPrint 保留定宽只压高度 → 横向拉宽。8.2 第 290 行的 `object-fit: contain !important` 就是为此加的，**别删**。
+17. **源 EPUB 的目录页怎么看有没有被跳过** → 只有规则③（内容特征）会在命中时打印 `跳过源目录页(自动识别): …`；规则①②（`properties="nav"`、名字含 `toc/目录`）是静默跳过。想确认，可在 `epub_to_html.py` 里临时给①②那行也加打印，或看 PDF 里是否出现重复目录。
 
 ---
 

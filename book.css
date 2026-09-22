@@ -285,12 +285,17 @@ html, body { height: auto !important; }
 /* ---- 8.2 图片：只限「上限」、等比缩放，保证一页之内放得下 ---- */
 img, svg, image, video, canvas, object, embed {
   max-width:  100% !important;   /* 不超出正文宽度 */
-  max-height: 68vh !important;   /* vh = 版心高度，68% 之后还放得下图注+几行正文 */
+  max-height: 68vh !important;   /* ★图片高度上限（想整体调小就改这个数）：vh=版心高度，68%=122.4mm，55%=99mm；留点空间给图注+正文 */
   height:     auto !important;   /* 压掉写死高度：保持比例、不变形 */
+  object-fit: contain !important; /* 见下方说明：源里 width:100% 与 max-height 打架时，靠它保住比例 */
 }
 /* 注意：这里故意不写 width:auto。
    否则源里的小图标/装饰图（style="width:1em"）会被还原成原始像素大小，
-   反而把行撑破；只限上限既安全又够用。 */
+   反而把行撑破；只限上限既安全又够用。
+   但“不写 width:auto”有个副作用：源书写了 width:100% 的图，宽度是定值，
+   再被 max-height 截断时 WeasyPrint 会保留定宽、只压高度 —— 图被横向拉宽变形。
+   object-fit:contain 让它改为在框内等比缩放（不变形、不改变布局宽度），
+   小图标/并排图不受影响（实测：真书 103 张图里只有真需要 width:100% 的会命中）。 */
 
 /* ---- 8.3 插图块：只要容器里「只有一张图」，一律按插图处理 ---- */
 :has(> img:only-child):not(body):not(html),
