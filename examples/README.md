@@ -14,8 +14,8 @@
 
 **图形窗口**：双击项目根目录的 `epub2pdf_gui.cmd`，把 `sample-input.epub` 的路径粘贴进去（或点「选择文件…」），点「开始转换」。
 
-**命令行**（等价，分两步；第 3 个参数是中间文件目录）：
+**命令行**（等价，分两步）：
 ```bash
 python epub_to_html.py "examples/sample-input.epub" "examples/_work/sample/book.html" "examples/_work/sample"
-python run.py          "examples/_work/sample/book.html" "examples/sample-output.pdf"
+python run.py "examples/_work/sample/book.html" "examples/sample-output.pdf"
 ```
