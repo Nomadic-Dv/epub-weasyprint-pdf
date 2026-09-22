@@ -1,6 +1,7 @@
 # ===== 忽略所有，只放行工具文件 =====
 /*
 !/.gitignore
+!/.gitattributes
 !/LICENSE
 !/README.md
 !/requirements.txt

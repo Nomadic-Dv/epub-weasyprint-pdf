@@ -1,0 +1,10 @@
+# Windows 批处理必须保持 CRLF：LF-only 的 .cmd 会让 cmd.exe 解析出错
+# （如 "xxx 不是内部或外部命令"、". was unexpected at this time."）。
+# git 在仓库内统一存 LF，检出时按此规则还原为 CRLF。
+*.cmd text eol=crlf
+
+# 其余文本文件统一按 LF 存储，换行由本地 autocrlf 决定
+*.py   text
+*.css  text
+*.md   text
+*.txt  text
